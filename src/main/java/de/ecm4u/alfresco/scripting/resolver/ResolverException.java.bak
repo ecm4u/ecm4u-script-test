@@ -1,0 +1,17 @@
+package de.ecm4u.alfresco.scripting.resolver;
+
+public class ResolverException extends Exception {
+	private static final long serialVersionUID = 1L;
+
+	public ResolverException() {
+		super();
+	}
+
+	public ResolverException(String msg) {
+		super(msg);
+	}
+
+	public ResolverException(Throwable t) {
+		super(t);
+	}
+}

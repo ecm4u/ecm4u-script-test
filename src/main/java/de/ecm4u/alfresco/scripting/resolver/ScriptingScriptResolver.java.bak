@@ -1,0 +1,25 @@
+package de.ecm4u.alfresco.scripting.resolver;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.alfresco.repo.jscript.BaseScopableProcessorExtension;
+import org.alfresco.repo.jscript.ScriptNode;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.mozilla.javascript.Scriptable;
+
+import de.ecm4u.alfresco.scripting.resolver.ScriptResolver;
+
+public class ScriptingScriptResolver extends BaseScopableProcessorExtension {
+
+    private ScriptResolver scriptResolver;
+    
+    public Scriptable getScriptResult(final ScriptNode scriptNode, String ScriptQNamePath ) {
+        final NodeRef nodeRef = scriptNode.getNodeRef();
+        String[] scriptingResult = scriptResolver.getScriptResult(nodeRef, ScriptQNamePath, null);
+        Map<String, Object> scriptingResult = new HashMap<>();
+        convertedResult.putAll(scriptingResult);
+
+    }
+    
+}

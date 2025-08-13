@@ -1,0 +1,4 @@
+de\ecm4u\alfresco\scripting\jscript\ScriptingExtension.class
+de\ecm4u\alfresco\scripting\jscript\AbstractScriptService.class
+de\ecm4u\alfresco\scripting\service\ScriptingServiceImpl.class
+de\ecm4u\alfresco\scripting\service\ScriptingService.class

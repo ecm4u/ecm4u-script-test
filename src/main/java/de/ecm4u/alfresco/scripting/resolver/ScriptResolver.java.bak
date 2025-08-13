@@ -1,0 +1,101 @@
+package de.ecm4u.alfresco.scripting.resolver;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.io.Serializable;
+
+import org.alfresco.model.ContentModel;
+import org.alfresco.repo.security.authentication.AuthenticationUtil;
+import org.alfresco.service.ServiceRegistry;
+import org.alfresco.service.cmr.repository.InvalidNodeRefException;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.cmr.repository.NodeService;
+import org.alfresco.service.cmr.repository.ScriptService;
+import org.alfresco.service.cmr.repository.StoreRef;
+import org.alfresco.service.cmr.repository.XPathException;
+import org.alfresco.service.cmr.search.SearchService;
+import org.alfresco.service.namespace.DynamicNamespacePrefixResolver;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+/**
+ * Resolver that uses a script.
+ *
+ * @author Heiko Robert heiko.robert@ecm4u.de
+ */
+
+public class ScriptResolver {
+    protected NodeService nodeService;
+    final static private Log LOGGER = LogFactory.getLog(ScriptResolver.class);
+    private ServiceRegistry serviceRegistry;
+    private ScriptService scriptService;
+    private static SearchService searchService;
+    final NodeRef companyhome = serviceRegistry.getNodeLocatorService().getNode("companyhome", null, null);
+
+    public Object getScriptResult(final NodeRef contextNodeRef, final String scriptXPath, Map<String, Serializable> values) throws ResolverException {
+        final NodeRef jsNodeRef = getNodeRefFromQnamePath(scriptXPath);
+        String userName = AuthenticationUtil.getRunAsUser();
+        NodeRef personRef = serviceRegistry.getPersonService().getPersonOrNull(userName);
+        NodeRef homeSpaceRef = null;
+        if (personRef != null) {
+            homeSpaceRef = (NodeRef)serviceRegistry.getNodeService().getProperty(personRef, ContentModel.PROP_HOMEFOLDER);
+        }
+        
+        Map<String, Object> model = scriptService.buildDefaultModel(personRef, this.companyhome, homeSpaceRef, jsNodeRef, contextNodeRef, null);
+
+        model.put("properties", values);
+
+        final Object response = scriptService.executeScript(jsNodeRef, ContentModel.PROP_CONTENT, model);
+        if (response instanceof String) {
+            return new String[]{(String) response};
+        } else if (response instanceof ArrayList) {
+            List l = (ArrayList) response;
+            final String[] convertedToStringArray = new String[l.size()];
+            for (int i = 0; i < l.size(); i++) {
+                convertedToStringArray[i] = (String) l.get(i);
+            }
+            return convertedToStringArray;
+        } else {
+            LOGGER.warn("Script " + jsNodeRef + " did not return a java.lang.String or a java.util.ArrayList but a " + response.getClass().getCanonicalName());
+            return new String[]{};
+        }
+    }
+
+    private NodeRef getNodeRefFromQnamePath(final String xpath) throws ResolverException, XPathException, InvalidNodeRefException,IllegalStateException {
+        NodeRef nodeRef = null;
+        try {
+            DynamicNamespacePrefixResolver namespacePrefixResolver = new DynamicNamespacePrefixResolver(null);
+            NodeRef contextNodeRef = nodeService.getRootNode(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE);
+            
+            List<NodeRef> nodeRefs = searchService.selectNodes(contextNodeRef,
+                 xpath, null, namespacePrefixResolver, false);
+            if (nodeRefs.isEmpty()) {
+                throw new IllegalStateException(String.format("Found no node for xpath %s.", xpath));
+            } else if (nodeRefs.size() == 1) {
+                nodeRef = nodeRefs.get(0);
+            } else {
+                throw new IllegalStateException(String.format("Found more than 1 node for xpath %s: %s.", xpath, nodeRefs));
+            } 
+            return nodeRef;
+        } catch (XPathException e) {
+            e.printStackTrace();
+        } catch (InvalidNodeRefException e) {
+            e.printStackTrace();
+        }
+        return nodeRef;
+    }
+
+    private NodeRef getNodeRefFromPath(final String path) throws ResolverException {
+        String[] parts = path.split("\\/");
+        NodeRef nodeRef = nodeService.getRootNode(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE);
+        for (String name : parts) {
+        NodeRef child = nodeService.getChildByName(nodeRef, ContentModel.ASSOC_CONTAINS, name);
+        if (child == null) 
+            throw new ResolverException("Path part not found "+name+" in "+path+" at "+nodeRef);
+        nodeRef = child;
+        }
+        return nodeRef;
+	}
+
+}

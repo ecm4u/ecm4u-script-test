@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<bean id="scriptingService" class="de.ecm4u.alfresco.scripting.service.ScriptingServiceImpl">
+    </bean>
+
+    <bean id="ecm4uScriptService" class="de.ecm4u.alfresco.scripting.jscript.ScriptingExtension" parent="baseJavaScriptExtension">
+    	<property name="extensionName" value="ecm4uScriptService" />
+	</bean>
+
+</beans>
